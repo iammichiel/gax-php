@@ -45,14 +45,7 @@ class RetryMiddleware implements MiddlewareInterface
     /** @var callable */
     private $nextHandler;
     private RetrySettings $retrySettings;
-    private ?float $deadlineMs;
     private Retrier $retrier;
-
-    /*
-     * The number of retries that have already been attempted.
-     * The original API call will have $retryAttempts set to 0.
-     */
-    private int $retryAttempts;
 
     public function __construct(
         callable $nextHandler,
@@ -68,13 +61,14 @@ class RetryMiddleware implements MiddlewareInterface
      * @param Call $call
      * @param array $options
      *
+     * TODO: Check if its PromiseInterface
      * @return PromiseInterface
      */
     public function __invoke(Call $call, array $options)
     {
         $nextHandler = $this->nextHandler;
-        return $this->retrier->execute(function() use ($call, $options, $nextHandler) {
-            return $nextHandler($call, $options);
-        });
+        return $this->retrier->execute(function($args) use ($call, $nextHandler) {
+            return $nextHandler($call, $args);
+        }, [$options]);
     }
 }
